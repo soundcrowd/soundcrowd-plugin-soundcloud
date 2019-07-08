@@ -1,0 +1,13 @@
+language: android
+android:
+  components:
+  - build-tools-28.0.3
+  - android-28
+deploy:
+  provider: releases
+  api_key:
+    secure: AtrVvk7EhsU212AHwfF2XPlGEIPBmMQsPAFwNFLpAqd5cljX/KhQsCqeQJzZVQauM+gQSgM0Ud9HRdMnCdri90i0VtsTtJbVChNvclQ2qekMbohVFmHX/Nrn3rtOmGovgqtlbXxC6CJEoFqBparnmu/GBPdmBK/ADFUobssEwTa+Ffl6YFJDaM0OrwLtwxNVRWNdfKOHHRqUwiUJ/cDvT5ujDB6yfLw4Jqfi9coWLCMMOwMVJjqMU217MVxc9QOiGYO4+dz8l4huxsVfyeTyyVoBlfrZhZUz797eaotk2fran6Phdf7jtLgaM69KZ5mYYBlVEUvpbEeI1cJS106mKb00IpTt5xRfOat9/3pB15TZMpusHsH0NWbogYKxO8jnMqnhD2jBx0zJKznZhFODZoBlBAPH4sk2l3e1Yj5E/jI7unhEcwBHrBrkHpjq8IyzBtqxI+yWSqz5pPLX809HIpYRIs4FVyO5N4FaxijNDDMhfRSAxBSCU/swDqvoVK0eGndwpYMb5mght27y/H2L/n2FQZlLvosedi5wFVUQN3DHoU7hI8pHNoXfPKzTB1zEe1UruuQ/H2hwwWqNYQOZp+3UzwWHkwTcjdnyej/TvqIwk4jsKGvC+WFXrbbe3zhz07tiX1FWNOIIaG4BRsVkooLcDL94/E8DnfuG4kNXgiM=
+  file: soundcloud/build/outputs/apk/release/soundcloud-release-unsigned.apk
+  skip_cleanup: true
+  on:
+    tags: true

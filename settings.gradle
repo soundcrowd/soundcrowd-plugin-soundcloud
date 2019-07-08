@@ -1,0 +1,2 @@
+include ':soundcloud', ':plugin'
+project(':plugin').projectDir = new File('plugin/plugin')
