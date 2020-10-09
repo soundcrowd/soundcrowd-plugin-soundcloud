@@ -47,7 +47,7 @@ class SoundCloudApi(CLIENT_ID: String, CLIENT_SECRET: String, accessToken: Strin
                   val CLIENT_SECRET: String,
                   var accessToken: String? = null,
                   val nextQueryUrls: HashMap<String, String> = HashMap(),
-                  val playlists: HashMap<String, JSONArray>  = HashMap(),
+                  val playlists: HashMap<String, JSONArray> = HashMap(),
                   var likesTrackIds: MutableSet<Long> = HashSet())
 
     private val session: Session = Session(CLIENT_ID, CLIENT_SECRET, accessToken)
@@ -84,7 +84,7 @@ class SoundCloudApi(CLIENT_ID: String, CLIENT_SECRET: String, accessToken: Strin
      */
     @Throws(NotAuthenticatedException::class, JSONException::class, IOException::class)
     fun getStream(reset: Boolean): JSONArray {
-        return parseTracksFromJSONArray(Requests.CollectionRequest(session, Endpoints.STREAM_URL, reset).execute().getJSONArray(0), session.CLIENT_ID)
+        return parseTracksFromJSONArray(Requests.CollectionRequest(session, Endpoints.STREAM_URL, reset).execute(), session.CLIENT_ID)
     }
 
     /**
