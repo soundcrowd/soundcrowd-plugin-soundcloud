@@ -22,8 +22,8 @@ class Requests {
         open val url = "${Endpoints.SC_API_URL}$route"
     }
 
-    class CollectionEndpoint(route: String, authenticated: Boolean) : Endpoint(route, Method.GET, authenticated) {
-        override val url = SoundCloudApi.append(super.url, "linked_partitioning", "1")
+    class CollectionEndpoint(route: String, authenticated: Boolean, size: Int = 50) : Endpoint(route, Method.GET, authenticated) {
+        override val url = append(append(super.url, "linked_partitioning", "1"), "page_size", "$size")
     }
 
     class CollectionRequest(session: SoundCloudApi.Session, endpoint: CollectionEndpoint, private val reset: Boolean, vararg args: Any?) : Request<JSONArray>(session, endpoint, *args) {
@@ -55,7 +55,6 @@ class Requests {
             }
             return json.getJSONArray(COLLECTION)
         }
-
     }
 
     class ActionRequest(session: SoundCloudApi.Session, endpoint: Endpoint, vararg args: Any?) : Request<WebRequests.Response>(session, endpoint, *args) {
@@ -72,9 +71,9 @@ class Requests {
                 if (session.accessToken == null) {
                     throw SoundCloudApi.NotAuthenticatedException()
                 }
-                SoundCloudApi.append(url, "oauth_token", session.accessToken)
+                append(url, "oauth_token", session.accessToken)
             } else {
-                SoundCloudApi.append(url, "client_id", session.CLIENT_ID)
+                append(url, "client_id", session.CLIENT_ID)
             }
         }
 

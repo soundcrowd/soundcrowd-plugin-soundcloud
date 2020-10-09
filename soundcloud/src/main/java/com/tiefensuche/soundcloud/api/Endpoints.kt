@@ -20,7 +20,7 @@ object Endpoints {
     // authenticated request methods
     val STREAM_URL = Requests.CollectionEndpoint("/me/activities/tracks/affiliated", true)
     val SELF_LIKES_URL = Requests.CollectionEndpoint("/me/favorites", true)
-    val SELF_LIKES_IDS_URL = Requests.CollectionEndpoint("/me/favorites/ids", true)
+    val SELF_LIKES_IDS_URL = Requests.CollectionEndpoint("/me/favorites/ids", true, 200)
     val SELF_TRACKS_URL = Requests.CollectionEndpoint("/me/tracks", true)
     val SELF_PLAYLISTS_URL = Requests.CollectionEndpoint("/me/playlists", true)
     val FOLLOWINGS_USER_URL = Requests.CollectionEndpoint("/me/followings", true)
