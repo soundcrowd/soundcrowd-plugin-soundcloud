@@ -69,7 +69,7 @@ class Requests {
         fun appendAuthentication(url: String): String {
             return if (endpoint.authenticated) {
                 if (session.accessToken == null) {
-                    throw SoundCloudApi.NotAuthenticatedException()
+                    throw SoundCloudApi.NotAuthenticatedException("Access token missing!")
                 }
                 append(url, "oauth_token", session.accessToken)
             } else {
@@ -82,7 +82,7 @@ class Requests {
                 return WebRequests.request(url, endpoint.method.value)
             } catch (e: WebRequests.HttpException) {
                 if (e.code == 401) {
-                    throw SoundCloudApi.NotAuthenticatedException()
+                    throw SoundCloudApi.NotAuthenticatedException("Not authenticated!")
                 }
                 throw e
             }

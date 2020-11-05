@@ -104,7 +104,7 @@ class Plugin(appContext: Context, val context: Context) : IPlugin {
         val password = sharedPref.getString(PASSWORD, null)
 
         if (username.isNullOrEmpty() || password.isNullOrEmpty()) {
-            throw SoundCloudApi.InvalidCredentialsException()
+            throw SoundCloudApi.InvalidCredentialsException("Username and/or password missing!")
         }
 
         val newToken = soundCloudApi.getAccessToken(username, password)

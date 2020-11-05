@@ -57,25 +57,25 @@ class SoundCloudApi(CLIENT_ID: String, CLIENT_SECRET: String, accessToken: Strin
      */
     @Throws(JSONException::class, IOException::class, UserNotFoundException::class, InvalidCredentialsException::class)
     fun getAccessToken(username: String, password: String): String {
-        if (username.isEmpty() || password.isEmpty()) {
-            throw InvalidCredentialsException()
-        }
-        val response = JSONObject(WebRequests.post(Endpoints.OAUTH2_TOKEN_URL,
-                "client_id=${session.CLIENT_ID}&client_secret=${session.CLIENT_SECRET}" +
-                        "&grant_type=password&username=$username&password=$password").value)
-        when {
-            response.has(ACCESS_TOKEN) -> {
+        try {
+            val response = JSONObject(WebRequests.post(Endpoints.OAUTH2_TOKEN_URL,
+                    "client_id=${session.CLIENT_ID}&client_secret=${session.CLIENT_SECRET}" +
+                            "&grant_type=password&username=$username&password=$password").value)
+
+            if (response.has(ACCESS_TOKEN)) {
                 session.accessToken = response.getString(ACCESS_TOKEN)
                 return response.getString(ACCESS_TOKEN)
             }
-            response.has(ERROR) -> when {
-                // username not existing
-                response.getString(ERROR) == "not_found" -> throw UserNotFoundException()
-                // invalid_credentials wrong password
-                response.getString(ERROR) == "invalid_grant" -> throw InvalidCredentialsException()
-                else -> throw RuntimeException()
+            throw Exception("Could not get access token!")
+        } catch (e: WebRequests.HttpException) {
+            val response = JSONObject(e.message)
+            if (response.has(ERROR)) {
+                if (response.getString(ERROR) == "invalid_grant")
+                    throw InvalidCredentialsException("Username and/or password wrong!")
+                else
+                    throw Exception(response.getString(ERROR))
             }
-            else -> throw RuntimeException()
+            throw Exception(e.message)
         }
     }
 
@@ -219,7 +219,7 @@ class SoundCloudApi(CLIENT_ID: String, CLIENT_SECRET: String, accessToken: Strin
     @Throws(JSONException::class, NotStreamableException::class)
     internal fun buildTrackFromJSON(json: JSONObject, clientId: String): JSONObject {
         if (!json.getBoolean(Constants.STREAMABLE))
-            throw NotStreamableException()
+            throw NotStreamableException("Item can not be streamed!")
 
         val user = json.getJSONObject(Constants.USER)
         val avatarUrl = user.getString(Constants.AVATAR_URL)
@@ -331,8 +331,8 @@ class SoundCloudApi(CLIENT_ID: String, CLIENT_SECRET: String, accessToken: Strin
     }
 
     // Exception types
-    class NotAuthenticatedException : Exception()
-    class InvalidCredentialsException : Exception()
-    class NotStreamableException : Exception()
-    class UserNotFoundException : Exception()
+    class NotAuthenticatedException(message: String) : Exception(message)
+    class InvalidCredentialsException(message: String) : Exception(message)
+    class NotStreamableException(message: String) : Exception(message)
+    class UserNotFoundException(message: String) : Exception(message)
 }
