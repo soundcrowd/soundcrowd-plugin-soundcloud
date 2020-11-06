@@ -59,8 +59,12 @@ class SoundCloudApi(CLIENT_ID: String, CLIENT_SECRET: String, accessToken: Strin
     fun getAccessToken(username: String, password: String): String {
         try {
             val response = JSONObject(WebRequests.post(Endpoints.OAUTH2_TOKEN_URL,
-                    "client_id=${session.CLIENT_ID}&client_secret=${session.CLIENT_SECRET}" +
-                            "&grant_type=password&username=$username&password=$password").value)
+                    "client_id=${session.CLIENT_ID}" +
+                            "&client_secret=${session.CLIENT_SECRET}" +
+                            "&grant_type=password" +
+                            "&username=$username" +
+                            "&password=$password" +
+                            "&scope=non-expiring").value)
 
             if (response.has(ACCESS_TOKEN)) {
                 session.accessToken = response.getString(ACCESS_TOKEN)
