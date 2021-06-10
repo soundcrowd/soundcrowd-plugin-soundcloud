@@ -280,8 +280,7 @@ class SoundCloudApi(CLIENT_ID: String, CLIENT_SECRET: String, accessToken: Strin
 
     /**
      * Responses
-     * 201 - Created - Success
-     * 200 - OK - Liked already
+     * 200 - Success
      *
      * @param trackId
      * @param accessToken
@@ -291,7 +290,7 @@ class SoundCloudApi(CLIENT_ID: String, CLIENT_SECRET: String, accessToken: Strin
     @Throws(IOException::class, NotAuthenticatedException::class)
     private fun like(trackId: String): Boolean {
         val result = Requests.ActionRequest(session, Endpoints.LIKE_TRACK_URL, trackId).execute()
-        val success = result.status == 201
+        val success = result.status == 200
         if (success)
             session.likesTrackIds.add(java.lang.Long.parseLong(trackId))
         return success

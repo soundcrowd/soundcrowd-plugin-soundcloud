@@ -15,7 +15,7 @@ import org.json.JSONObject
 class Requests {
 
     enum class Method(val value: String) {
-        GET("GET"), PUT("PUT"), DELETE("DELETE")
+        GET("GET"), POST("POST"), PUT("PUT"), DELETE("DELETE")
     }
 
     open class Endpoint(route: String, val method: Method, val authenticated: Boolean) {

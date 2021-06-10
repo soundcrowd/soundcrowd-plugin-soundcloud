@@ -26,6 +26,6 @@ object Endpoints {
     val FOLLOWERS_USER_URL = Requests.CollectionEndpoint("/me/followers", true)
 
     // authenticated actions
-    val LIKE_TRACK_URL = Requests.Endpoint("/me/favorites/%s", Requests.Method.PUT, true)
-    val UNLIKE_TRACK_URL = Requests.Endpoint("/me/favorites/%s", Requests.Method.DELETE, true)
+    val LIKE_TRACK_URL = Requests.Endpoint("/likes/tracks/%s", Requests.Method.POST, true)
+    val UNLIKE_TRACK_URL = Requests.Endpoint("/likes/tracks/%s", Requests.Method.DELETE, true)
 }
