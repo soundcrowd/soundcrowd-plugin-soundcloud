@@ -247,8 +247,15 @@ class SoundCloudApi(CLIENT_ID: String, CLIENT_SECRET: String, accessToken: Strin
 
         // The favorite status requires the user to be logged in. Not adding the metadata will
         // effectively disable the favorite functionality and hiding it in the UI.
-        if (session.accessToken != null)
-            result.put(MediaMetadataCompatExt.METADATA_KEY_FAVORITE, isLiked(json.getLong(Constants.ID)))
+        if (session.accessToken != null) {
+            if (!json.isNull(Constants.USER_FAVORITE) && json.getBoolean(Constants.USER_FAVORITE)) {
+                result.put(MediaMetadataCompatExt.METADATA_KEY_FAVORITE, true)
+                session.likesTrackIds.add(json.getLong(Constants.ID))
+            } else {
+                result.put(MediaMetadataCompatExt.METADATA_KEY_FAVORITE, false)
+            }
+        }
+
         if (!json.isNull(Constants.DOWNLOADABLE) && json.getBoolean(Constants.DOWNLOADABLE) && json.has(Constants.DOWNLOAD_URL))
             result.put(MediaMetadataCompatExt.METADATA_KEY_DOWNLOAD_URL, json.getString(Constants.DOWNLOAD_URL))
 
@@ -270,8 +277,6 @@ class SoundCloudApi(CLIENT_ID: String, CLIENT_SECRET: String, accessToken: Strin
 
     @Throws(IOException::class, NotAuthenticatedException::class)
     fun toggleLike(trackId: String): Boolean {
-        if (session.likesTrackIds.isEmpty())
-            getLikedTrackIds()
         return if (!session.likesTrackIds.contains(trackId.toLong()))
             like(trackId)
         else
@@ -313,24 +318,6 @@ class SoundCloudApi(CLIENT_ID: String, CLIENT_SECRET: String, accessToken: Strin
         if (success)
             session.likesTrackIds.remove(java.lang.Long.parseLong(trackId))
         return success
-    }
-
-    private fun isLiked(soundCloudId: Long?): Boolean {
-        if (session.likesTrackIds.isEmpty()) {
-            getLikedTrackIds()
-        }
-        return session.likesTrackIds.contains(soundCloudId)
-    }
-
-    @Throws(IOException::class, JSONException::class)
-    private fun getLikedTrackIds() {
-        val request = Requests.CollectionRequest(session, Endpoints.SELF_LIKES_IDS_URL, false)
-        do {
-            val collection = request.execute()
-            for (i in 0 until collection.length()) {
-                session.likesTrackIds.add(collection.getLong(i))
-            }
-        } while (!session.nextQueryUrls[request.url].equals(JSON_NULL))
     }
 
     // Exception types
