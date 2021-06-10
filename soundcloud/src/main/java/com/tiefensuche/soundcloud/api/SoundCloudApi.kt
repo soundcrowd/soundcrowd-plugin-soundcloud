@@ -225,21 +225,19 @@ class SoundCloudApi(CLIENT_ID: String, CLIENT_SECRET: String, accessToken: Strin
         if (!json.getBoolean(Constants.STREAMABLE))
             throw NotStreamableException("Item can not be streamed!")
 
-        val user = json.getJSONObject(Constants.USER)
-        val avatarUrl = user.getString(Constants.AVATAR_URL)
-        var artworkUrl: String? = json.getString(Constants.ARTWORK_URL)
-        if (artworkUrl == JSON_NULL) {
-            artworkUrl = avatarUrl
-            if (artworkUrl.contains("?"))
-                artworkUrl = null
+        val artwork = if (!json.isNull(Constants.ARTWORK_URL)) {
+            json.getString(Constants.ARTWORK_URL)
+        } else {
+            json.getJSONObject(Constants.USER).getString(Constants.AVATAR_URL)
         }
+
         val result = JSONObject()
         result.put(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, json.getLong(Constants.ID).toString())
                 .put(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, append(json.getString(Constants.STREAM_URL), "consumer_key", clientId))
-                .put(MediaMetadataCompat.METADATA_KEY_ARTIST, user.getString(Constants.USERNAME))
+                .put(MediaMetadataCompat.METADATA_KEY_ARTIST, json.getJSONObject(Constants.USER).getString(Constants.USERNAME))
                 .put(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, json.getString(Constants.DESCRIPTION))
                 .put(MediaMetadataCompat.METADATA_KEY_DURATION, json.getInt(Constants.DURATION))
-                .put(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, artworkUrl?.replace("large", "t500x500"))
+                .put(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, artwork.replace("large", "t500x500"))
                 .put(MediaMetadataCompat.METADATA_KEY_TITLE, json.getString(Constants.TITLE))
                 .put(MediaMetadataCompatExt.METADATA_KEY_URL, json.getString(Constants.PERMALINK_URL))
                 .put(MediaMetadataCompatExt.METADATA_KEY_WAVEFORM_URL, json.getString(Constants.WAVEFORM_URL).replace("w1", "wis").replace("png", "json"))
