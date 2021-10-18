@@ -1,18 +1,25 @@
 package com.tiefensuche.soundcrowd.plugins.soundcloud
 
 import android.content.Context
+import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.preference.PreferenceManager
+import android.media.MediaDataSource
+import android.net.Uri
+import android.os.AsyncTask
+import android.support.v4.media.MediaMetadataCompat
+import androidx.preference.Preference
+import androidx.preference.PreferenceManager
+import androidx.preference.SwitchPreference
 import com.tiefensuche.soundcloud.api.Constants.ACCESS_TOKEN
+import com.tiefensuche.soundcloud.api.Constants.REFRESH_TOKEN
+import com.tiefensuche.soundcloud.api.Endpoints
 import com.tiefensuche.soundcloud.api.SoundCloudApi
+import com.tiefensuche.soundcrowd.extensions.MediaMetadataCompatExt
 import com.tiefensuche.soundcrowd.plugins.Callback
 import com.tiefensuche.soundcrowd.plugins.IPlugin
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
-import java.io.IOException
 
 /**
  * SoundCloud plugin for soundcrowd
@@ -21,11 +28,6 @@ class Plugin(appContext: Context, val context: Context) : IPlugin {
 
     companion object {
         const val name = "SoundCloud"
-        const val KEY = "key"
-        const val NAME = "name"
-        const val DESCRIPTION = "description"
-        const val USERNAME = "username"
-        const val PASSWORD = "password"
         const val STREAM = "Stream"
         const val LIKES = "Likes"
         const val PLAYLISTS = "Playlists"
@@ -36,34 +38,43 @@ class Plugin(appContext: Context, val context: Context) : IPlugin {
 
     private val icon: Bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.plugin_icon)
     private var sharedPref: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(appContext)
-    private var soundCloudApi: SoundCloudApi = SoundCloudApi(context.getString(R.string.client_id), context.getString(R.string.client_secret), sharedPref.getString(ACCESS_TOKEN, null))
+    private var soundCloudApi: SoundCloudApi = SoundCloudApi(context.getString(R.string.client_id),
+        context.getString(R.string.client_secret), context.getString(R.string.redirect_uri), sharedPref)
+    private val connectPreference = SwitchPreference(appContext)
 
-    override fun name(): String = name
-
-    override fun mediaCategories(): List<String> =
-            listOf(STREAM, LIKES, PLAYLISTS, FOLLOWINGS, FOLLOWERS, YOU)
-
-    override fun preferences(): JSONArray = JSONArray()
-            .put(JSONObject()
-                .put(KEY, USERNAME)
-                .put(NAME, context.getString(R.string.username))
-                .put(DESCRIPTION, context.getString(R.string.username_description)))
-            .put(JSONObject()
-                    .put(KEY, PASSWORD)
-                    .put(NAME, context.getString(R.string.password))
-                    .put(DESCRIPTION, context.getString(R.string.password_description)))
-
-    @Throws(Exception::class)
-    override fun getMediaItems(mediaCategory: String, callback: Callback<JSONArray>, refresh: Boolean) {
-        try {
-            processRequest(mediaCategory, callback, refresh)
-        } catch (e: SoundCloudApi.NotAuthenticatedException) {
-            requestNewAccessToken()
-            processRequest(mediaCategory, callback, refresh)
+    init {
+        connectPreference.key = context.getString(R.string.connect_key)
+        connectPreference.title = context.getString(R.string.connect_title)
+        connectPreference.summary = context.getString(R.string.connect_summary)
+        connectPreference.isChecked = sharedPref.getString(ACCESS_TOKEN, null) != null
+        connectPreference.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newValue ->
+            if (newValue == true) {
+                val intent = Intent(
+                    Intent.ACTION_VIEW, Uri.parse("${Endpoints.SC_API_URL}/connect?client_id=${context.getString(
+                        R.string.client_id)}&redirect_uri=${context.getString(
+                        R.string.redirect_uri)}&response_type=code"))
+                intent.flags = FLAG_ACTIVITY_NEW_TASK
+                appContext.startActivity(intent)
+                false
+            } else {
+                sharedPref.edit().putString(ACCESS_TOKEN, null).putString(REFRESH_TOKEN, null).apply()
+                true
+            }
         }
     }
 
-    private fun processRequest(mediaCategory: String, callback: Callback<JSONArray>, refresh: Boolean) {
+    override fun name(): String = name
+
+    override fun mediaCategories(): List<String> = listOf(STREAM, LIKES, PLAYLISTS, FOLLOWINGS, FOLLOWERS, YOU)
+
+    override fun preferences() = listOf(connectPreference)
+
+    @Throws(Exception::class)
+    override fun getMediaItems(mediaCategory: String, callback: Callback<List<MediaMetadataCompat>>, refresh: Boolean) {
+        processRequest(mediaCategory, callback, refresh)
+    }
+
+    private fun processRequest(mediaCategory: String, callback: Callback<List<MediaMetadataCompat>>, refresh: Boolean) {
         when (mediaCategory) {
             STREAM -> callback.onResult(soundCloudApi.getStream(refresh))
             LIKES -> callback.onResult(soundCloudApi.getLikes(refresh))
@@ -75,7 +86,7 @@ class Plugin(appContext: Context, val context: Context) : IPlugin {
     }
 
     @Throws(Exception::class)
-    override fun getMediaItems(mediaCategory: String, path: String, callback: Callback<JSONArray>, refresh: Boolean) {
+    override fun getMediaItems(mediaCategory: String, path: String, callback: Callback<List<MediaMetadataCompat>>, refresh: Boolean) {
         when (mediaCategory) {
             STREAM -> callback.onResult(soundCloudApi.getPlaylist(path, refresh))
             PLAYLISTS -> callback.onResult(soundCloudApi.getPlaylist(path, refresh))
@@ -84,7 +95,7 @@ class Plugin(appContext: Context, val context: Context) : IPlugin {
     }
 
     @Throws(Exception::class)
-    override fun getMediaItems(mediaCategory: String, path: String, query: String, callback: Callback<JSONArray>, refresh: Boolean) {
+    override fun getMediaItems(mediaCategory: String, path: String, query: String, callback: Callback<List<MediaMetadataCompat>>, refresh: Boolean) {
         if (path.isEmpty()) {
             callback.onResult(soundCloudApi.query(query, refresh))
         } else {
@@ -92,24 +103,10 @@ class Plugin(appContext: Context, val context: Context) : IPlugin {
         }
     }
 
-    override fun getMediaUrl(metadata: JSONObject, callback: Callback<JSONObject>) {
-        // pass-through url since it contains the actual stream already
-        callback.onResult(metadata)
-    }
-
-    @Throws(SoundCloudApi.UserNotFoundException::class, SoundCloudApi.InvalidCredentialsException::class, JSONException::class, IOException::class)
-    private fun requestNewAccessToken(): String {
-
-        val username = sharedPref.getString(USERNAME, null)
-        val password = sharedPref.getString(PASSWORD, null)
-
-        if (username.isNullOrEmpty() || password.isNullOrEmpty()) {
-            throw SoundCloudApi.InvalidCredentialsException("Username and/or password missing!")
-        }
-
-        val newToken = soundCloudApi.getAccessToken(username, password)
-        sharedPref.edit().putString(ACCESS_TOKEN, newToken).apply()
-        return newToken
+    override fun getMediaUrl(metadata: MediaMetadataCompat, callback: Callback<Pair<MediaMetadataCompat, MediaDataSource?>>) {
+        val steamUrl = soundCloudApi.getStreamUrl(metadata.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI))
+        callback.onResult(Pair(MediaMetadataCompat.Builder(metadata)
+            .putString(MediaMetadataCompatExt.METADATA_KEY_DOWNLOAD_URL, steamUrl).build(), null))
     }
 
     override fun favorite(id: String, callback: Callback<Boolean>) {
@@ -117,4 +114,25 @@ class Plugin(appContext: Context, val context: Context) : IPlugin {
     }
 
     override fun getIcon(): Bitmap = icon
+
+    private class RequestAccessTokenTask(private val plugin : Plugin) : AsyncTask<String, Void, Boolean>() {
+        override fun doInBackground(vararg p0: String): Boolean {
+            return try {
+                plugin.soundCloudApi.getAccessToken(p0[0], false)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        override fun onPostExecute(result: Boolean) {
+            plugin.connectPreference.isChecked = result
+        }
+    }
+
+    private fun callback(callback: String) {
+        RequestAccessTokenTask(this).execute(callback.substringAfterLast('='))
+    }
+
+    override fun callbacks() = mapOf("soundcloud" to ::callback)
 }

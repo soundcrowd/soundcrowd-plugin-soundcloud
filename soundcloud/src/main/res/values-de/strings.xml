@@ -1,6 +1,3 @@
 <resources>
-    <string name="username">Benutzername</string>
-    <string name="username_description">Dein Benutzername bei SoundCloud</string>
-    <string name="password">Passwort</string>
-    <string name="password_description">Dein Passwort bei SoundCloud</string>
+    <string name="connect_summary">Verbinde deinen SoundCloud Account</string>
 </resources>

@@ -14,6 +14,7 @@ android {
 
         resValue "string", "client_id", "YOUR-CLIENT-ID"
         resValue "string", "client_secret", "YOUR-CLIENT-SECRET"
+        resValue "string", "redirect_uri", "YOUR-REDIRECT-URI"
     }
 
     buildTypes {

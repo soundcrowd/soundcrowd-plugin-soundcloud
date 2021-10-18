@@ -10,6 +10,7 @@ package com.tiefensuche.soundcloud.api
 
 internal object Constants {
     const val ACCESS_TOKEN = "access_token"
+    const val REFRESH_TOKEN = "refresh_token"
     const val ORIGIN = "origin"
     const val KIND = "kind"
     const val TRACK = "track"
@@ -17,7 +18,7 @@ internal object Constants {
     const val COLLECTION = "collection"
     const val TRACKS = "tracks"
     const val NEXT_HREF = "next_href"
-    const val ERROR = "error"
+    const val ERROR = "error_code"
     const val JSON_NULL = "null"
     const val ID = "id"
     const val USER_ID = "user_id"
