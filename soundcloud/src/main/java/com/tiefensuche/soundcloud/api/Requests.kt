@@ -49,7 +49,7 @@ class Requests {
             val response = request(currentUrl)
             val json = JSONObject(response.value)
             if (!json.isNull(NEXT_HREF)) {
-                session.nextQueryUrls[url] = JSONObject(response.value).getString(NEXT_HREF)
+                session.nextQueryUrls[url] = json.getString(NEXT_HREF)
             } else {
                 session.nextQueryUrls[url] = JSON_NULL
             }
