@@ -30,7 +30,7 @@ android {
 }
 
 dependencies {
-    implementation project(path: ':plugin')
+    implementation 'com.tiefensuche.soundcrowd:plugin:0.1'
 }
 
 repositories {
