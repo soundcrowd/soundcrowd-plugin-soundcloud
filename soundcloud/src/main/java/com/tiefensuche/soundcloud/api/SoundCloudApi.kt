@@ -224,7 +224,7 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
         }
 
         val result = MediaMetadataCompat.Builder()
-            .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, json.getLong(Constants.ID).toString())
+                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, json.getLong(Constants.ID).toString())
                 .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, json.getString(Constants.STREAM_URL))
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, json.getJSONObject(Constants.USER).getString(Constants.USERNAME))
                 .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, json.getString(Constants.DESCRIPTION))
@@ -255,7 +255,7 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
     @Throws(JSONException::class)
     private fun buildUserFromJSON(json: JSONObject): MediaMetadataCompat {
         return MediaMetadataCompat.Builder()
-            .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, json.getLong(Constants.ID).toString())
+                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, json.getLong(Constants.ID).toString())
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, json.getString(Constants.USERNAME))
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, json.getString(Constants.FULL_NAME))
                 .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, json.getString(Constants.AVATAR_URL).replace("large", "t500x500"))
@@ -310,7 +310,7 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
     }
 
     fun getStreamUrl(url: String): String {
-        val res = Requests.ActionRequest(this, Requests.Endpoint(Uri.parse(url).path, Requests.Method.GET)).execute()
+        val res = Requests.ActionRequest(this, Requests.Endpoint(Uri.parse(url).path!!, Requests.Method.GET)).execute()
         if (res.status == 302) {
             return JSONObject(res.value).getString("location")
         }
