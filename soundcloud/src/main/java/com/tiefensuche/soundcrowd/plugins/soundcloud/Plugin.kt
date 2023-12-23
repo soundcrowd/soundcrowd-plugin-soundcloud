@@ -78,7 +78,7 @@ class Plugin(appContext: Context, val context: Context) : IPlugin {
         when (mediaCategory) {
             STREAM -> callback.onResult(soundCloudApi.getStream(refresh))
             LIKES -> callback.onResult(soundCloudApi.getLikes(refresh))
-            PLAYLISTS -> callback.onResult(soundCloudApi.getSelfPlaylists())
+            PLAYLISTS -> callback.onResult(soundCloudApi.getPlaylists(refresh))
             FOLLOWINGS -> callback.onResult(soundCloudApi.getFollowings(refresh))
             FOLLOWERS -> callback.onResult(soundCloudApi.getFollowers(refresh))
             YOU -> callback.onResult(soundCloudApi.getSelfTracks(refresh))
@@ -91,6 +91,7 @@ class Plugin(appContext: Context, val context: Context) : IPlugin {
             STREAM -> callback.onResult(soundCloudApi.getPlaylist(path, refresh))
             PLAYLISTS -> callback.onResult(soundCloudApi.getPlaylist(path, refresh))
             FOLLOWINGS, FOLLOWERS -> callback.onResult(soundCloudApi.getUserTracks(path, refresh))
+            YOU -> callback.onResult(soundCloudApi.getPlaylist(path, refresh))
         }
     }
 

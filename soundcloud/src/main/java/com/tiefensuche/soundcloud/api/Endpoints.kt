@@ -10,7 +10,7 @@ object Endpoints {
 
     // unauthenticated request methods
     val USER_TRACKS_URL = Requests.CollectionEndpoint("/users/%s/tracks")
-    val PLAYLIST_URL = Requests.CollectionEndpoint("/playlists/%s")
+    val PLAYLIST_URL = Requests.CollectionEndpoint("/playlists/%s/tracks")
     val QUERY_URL = Requests.CollectionEndpoint("/tracks?q=%s")
     val QUERY_USER_URL = Requests.CollectionEndpoint("/users?q=%s")
 
@@ -20,6 +20,7 @@ object Endpoints {
     // authenticated request methods
     val STREAM_URL = Requests.CollectionEndpoint("/me/activities/tracks")
     val SELF_LIKES_URL = Requests.CollectionEndpoint("/me/likes/tracks")
+    val SELF_PLAYLIST_LIKES_URL = Requests.CollectionEndpoint("/me/likes/playlists")
     val SELF_TRACKS_URL = Requests.CollectionEndpoint("/me/tracks")
     val SELF_PLAYLISTS_URL = Requests.CollectionEndpoint("/me/playlists")
     val FOLLOWINGS_USER_URL = Requests.CollectionEndpoint("/me/followings")

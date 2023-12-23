@@ -42,7 +42,6 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
     var refreshToken: String? = prefs.getString(REFRESH_TOKEN, null)
     var preferDownloadStream: Boolean = false
     val nextQueryUrls: HashMap<String, String> = HashMap()
-    val playlists: HashMap<String, List<MediaMetadataCompat>> = HashMap()
     var likesTrackIds: MutableSet<Long> = HashSet()
 
     /**
@@ -120,24 +119,34 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
     }
 
     /**
-     * Returns the logged in user's tracks
+     * Returns the logged in user's tracks and playlists
      */
     @Throws(IOException::class, NotAuthenticatedException::class, JSONException::class)
     fun getSelfTracks(reset: Boolean): List<MediaMetadataCompat> {
-        return parseTracksFromJSONArray(Requests.CollectionRequest(this, Endpoints.SELF_TRACKS_URL, reset).execute())
+        val res = parseTracksFromJSONArray(Requests.CollectionRequest(this, Endpoints.SELF_TRACKS_URL, reset).execute()).toMutableList()
+        res += parsePlaylists(Requests.CollectionRequest(this, Endpoints.SELF_PLAYLISTS_URL, reset).execute())
+        return res
     }
 
     /**
-     * Returns the logged in user's playlists
+     * Returns the logged in user's liked playlists
      */
     @Throws(IOException::class, NotAuthenticatedException::class, JSONException::class)
-    fun getSelfPlaylists(): List<MediaMetadataCompat> {
-        val playlists = Requests.CollectionRequest(this, Endpoints.SELF_PLAYLISTS_URL, false).execute()
+    fun getPlaylists(reset: Boolean): List<MediaMetadataCompat> {
+        return parsePlaylists(Requests.CollectionRequest(this, Endpoints.SELF_PLAYLIST_LIKES_URL, reset).execute())
+    }
 
+    /**
+     * Returns playlist identified by the given id
+     */
+    fun getPlaylist(id: String, reset: Boolean): List<MediaMetadataCompat> {
+        return parseTracksFromJSONArray(Requests.CollectionRequest(this, Endpoints.PLAYLIST_URL, reset, id).execute())
+    }
+
+    private fun parsePlaylists(playlists: JSONArray): List<MediaMetadataCompat> {
         val result = mutableListOf<MediaMetadataCompat>()
         for (i in 0 until playlists.length()) {
             val playlist = playlists.getJSONObject(i)
-
             val artwork: String = if (!playlist.isNull(Constants.ARTWORK_URL)) {
                 playlist.getString(Constants.ARTWORK_URL)
             } else {
@@ -152,11 +161,7 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
                     .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, artwork.replace("large", "t500x500"))
                     .putString(MediaMetadataCompatExt.METADATA_KEY_TYPE, MediaMetadataCompatExt.MediaType.STREAM.name)
                 .build())
-
-            // Since the endpoint additionally serves the playlist items, store them in a cache, so we don't need to query the playlist again
-            this.playlists[playlist.getString(Constants.ID)] = parseTracksFromJSONArray(playlist.getJSONArray(TRACKS))
         }
-
         return result
     }
 
@@ -174,17 +179,6 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
     @Throws(IOException::class, NotAuthenticatedException::class, JSONException::class)
     fun getFollowers(reset: Boolean): List<MediaMetadataCompat> {
         return parseTracksFromJSONArray(Requests.CollectionRequest(this, Endpoints.FOLLOWERS_USER_URL, reset).execute())
-    }
-
-    /**
-     * Returns cached playlists identified by the given id
-     */
-    @Throws(NotAuthenticatedException::class, JSONException::class, IOException::class)
-    fun getPlaylist(id: String, reset: Boolean): List<MediaMetadataCompat> {
-        if (!playlists.containsKey(id)) {
-            return emptyList()
-        }
-        return playlists.getValue(id)
     }
 
     private fun parseTracksFromJSONArray(tracks: JSONArray): List<MediaMetadataCompat> {
