@@ -21,8 +21,8 @@ class Requests {
         open val url = "${Endpoints.SC_API_URL}$route"
     }
 
-    class CollectionEndpoint(route: String, size: Int = 50) : Endpoint(route, Method.GET) {
-        override val url = append(append(super.url, "linked_partitioning", "1"), "page_size", "$size")
+    class CollectionEndpoint(route: String, limit: Int = 50) : Endpoint(route, Method.GET) {
+        override val url = append(append(super.url, "linked_partitioning", "1"), "limit", "$limit")
 
         private fun append(url: String, key: String, value: String?): String {
             return url + when {
