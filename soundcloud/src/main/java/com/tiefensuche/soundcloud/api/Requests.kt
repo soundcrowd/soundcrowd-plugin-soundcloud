@@ -39,25 +39,28 @@ class Requests {
 
             if (!reset && url in session.nextQueryUrls) {
                 session.nextQueryUrls[url]?.let {
-                    if (it == JSON_NULL) {
-                        return JSONArray()
-                    }
                     currentUrl = it
                 } ?: return JSONArray()
             }
 
-            val response = request(currentUrl)
-            val json = JSONObject(response.value)
-            if (!json.isNull(NEXT_HREF)) {
-                session.nextQueryUrls[url] = json.getString(NEXT_HREF)
-            } else {
-                session.nextQueryUrls[url] = JSON_NULL
-            }
+            while (currentUrl != JSON_NULL) {
+                val response = request(currentUrl)
+                val json = JSONObject(response.value)
+                currentUrl = if (!json.isNull(NEXT_HREF)) {
+                    json.getString(NEXT_HREF)
+                } else {
+                    JSON_NULL
+                }
+                session.nextQueryUrls[url] = currentUrl
 
-            if (!json.has(COLLECTION)) {
-                return JSONArray()
+                if (!json.has(COLLECTION)) {
+                    return JSONArray()
+                }
+                val collection = json.getJSONArray(COLLECTION)
+                if (collection.length() > 0)
+                    return collection
             }
-            return json.getJSONArray(COLLECTION)
+            return JSONArray()
         }
     }
 
