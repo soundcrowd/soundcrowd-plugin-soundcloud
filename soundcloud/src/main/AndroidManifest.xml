@@ -1,16 +1,1 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.tiefensuche.soundcrowd.plugins.soundcloud">
-
-    <application>
-        <provider
-            android:name="com.tiefensuche.soundcrowd.plugins.soundcloud.Plugin"
-            android:authorities="com.tiefensuche.soundcrowd.plugins.soundcloud"
-            android:exported="true"
-            tools:ignore="Instantiatable">
-            <intent-filter>
-                <action android:name="com.tiefensuche.soundcrowd.plugins" />
-            </intent-filter>
-        </provider>
-    </application>
-</manifest>
+<manifest />

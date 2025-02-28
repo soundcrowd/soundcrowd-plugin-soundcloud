@@ -14,7 +14,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
-          name: soundcrowd-plugin-soundcloud.apk
+          name: soundcrowd-plugin-soundcloud.aar
           path: |
-            soundcloud/build/outputs/apk/debug/soundcloud-debug.apk
-            soundcloud/build/outputs/apk/release/soundcloud-release-unsigned.apk
+            soundcloud/build/outputs/aar/soundcloud-debug.aar
+            soundcloud/build/outputs/aar/soundcloud-release.aar

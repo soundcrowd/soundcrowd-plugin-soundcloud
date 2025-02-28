@@ -19,8 +19,5 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
--keep class com.tiefensuche.soundcrowd.plugins.** { *; }
--keep class android.support.v4.media.** { *; }
--keep class androidx.preference.** { *; }
--keep class kotlin.** { *; }
--dontobfuscate
+-keep class com.tiefensuche.soundcrowd.plugins.soundcloud.Plugin { *; }
+-dontwarn java.lang.invoke.StringConcatFactory
