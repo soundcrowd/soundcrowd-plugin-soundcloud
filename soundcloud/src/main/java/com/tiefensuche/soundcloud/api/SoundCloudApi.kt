@@ -6,20 +6,20 @@ package com.tiefensuche.soundcloud.api
 
 import android.content.SharedPreferences
 import android.net.Uri
-import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.RatingCompat
 import android.util.Log
+import androidx.media3.common.HeartRating
+import androidx.media3.common.MediaItem
 import com.tiefensuche.soundcloud.api.Constants.ACCESS_TOKEN
 import com.tiefensuche.soundcloud.api.Constants.ERROR
 import com.tiefensuche.soundcloud.api.Constants.KIND
 import com.tiefensuche.soundcloud.api.Constants.LIKE
 import com.tiefensuche.soundcloud.api.Constants.ORIGIN
 import com.tiefensuche.soundcloud.api.Constants.TRACK
-import com.tiefensuche.soundcloud.api.Constants.TRACKS
 import com.tiefensuche.soundcloud.api.Constants.USER
 import com.tiefensuche.soundcloud.api.Constants.REFRESH_TOKEN
-import com.tiefensuche.soundcrowd.extensions.MediaMetadataCompatExt
-import com.tiefensuche.soundcrowd.extensions.WebRequests
+import com.tiefensuche.soundcrowd.plugins.MediaItemUtils
+import com.tiefensuche.soundcrowd.plugins.MediaMetadataCompatExt
+import com.tiefensuche.soundcrowd.plugins.WebRequests
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -31,8 +31,7 @@ import kotlin.collections.HashMap
  *
  * Created by tiefensuche on 07.02.18.
  */
-
-class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRECT_URI: String, val prefs: SharedPreferences) {
+class SoundCloudApi(private val CLIENT_ID: String, private val CLIENT_SECRET: String, private val REDIRECT_URI: String, private val prefs: SharedPreferences) {
 
     companion object {
         private var TAG = this::class.java.simpleName
@@ -40,9 +39,8 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
 
     var accessToken: String? = prefs.getString(ACCESS_TOKEN, null)
     var refreshToken: String? = prefs.getString(REFRESH_TOKEN, null)
-    var preferDownloadStream: Boolean = false
     val nextQueryUrls: HashMap<String, String> = HashMap()
-    var likesTrackIds: MutableSet<Long> = HashSet()
+    private var likesTrackIds: MutableSet<Long> = HashSet()
 
     /**
      * Request new access token for the user identified by the username and password
@@ -80,7 +78,7 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
      * SoundCloud stream for the configured username and password
      */
     @Throws(NotAuthenticatedException::class, JSONException::class, IOException::class)
-    fun getStream(reset: Boolean): List<MediaMetadataCompat> {
+    fun getStream(reset: Boolean): List<MediaItem> {
         return parseTracksFromJSONArray(Requests.CollectionRequest(this, Endpoints.STREAM_URL, reset).execute())
     }
 
@@ -88,7 +86,7 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
      * SoundCloud likes for username
      */
     @Throws(IOException::class, JSONException::class, NotAuthenticatedException::class)
-    fun getLikes(reset: Boolean): List<MediaMetadataCompat> {
+    fun getLikes(reset: Boolean): List<MediaItem> {
         return parseTracksFromJSONArray(Requests.CollectionRequest(this, Endpoints.SELF_LIKES_URL, reset).execute())
     }
 
@@ -98,14 +96,11 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
      * @param query
      */
     @Throws(JSONException::class, IOException::class)
-    fun query(query: String, reset: Boolean): List<MediaMetadataCompat> {
+    fun query(query: String, endpoint: Requests.CollectionEndpoint, reset: Boolean): List<MediaItem> {
         val trackList = JSONArray()
-        val urls = arrayOf(Endpoints.QUERY_URL, Endpoints.QUERY_USER_URL)
-        for (url in urls) {
-            val tracks = Requests.CollectionRequest(this, url, reset, URLEncoder.encode(query, "UTF-8")).execute()
-            for (j in 0 until tracks.length()) {
-                trackList.put(tracks.getJSONObject(j))
-            }
+        val tracks = Requests.CollectionRequest(this, endpoint, reset, URLEncoder.encode(query, "UTF-8")).execute()
+        for (j in 0 until tracks.length()) {
+            trackList.put(tracks.getJSONObject(j))
         }
         return parseTracksFromJSONArray(trackList)
     }
@@ -114,7 +109,7 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
      * Returns the tracks of the given user id
      */
     @Throws(JSONException::class, IOException::class, NotAuthenticatedException::class)
-    fun getUserTracks(userId: String, reset: Boolean): List<MediaMetadataCompat> {
+    fun getUserTracks(userId: String, reset: Boolean): List<MediaItem> {
         return parseTracksFromJSONArray(Requests.CollectionRequest(this, Endpoints.USER_TRACKS_URL, reset, userId).execute())
     }
 
@@ -122,7 +117,7 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
      * Returns the logged in user's tracks and playlists
      */
     @Throws(IOException::class, NotAuthenticatedException::class, JSONException::class)
-    fun getSelfTracks(reset: Boolean): List<MediaMetadataCompat> {
+    fun getSelfTracks(reset: Boolean): List<MediaItem> {
         val res = parseTracksFromJSONArray(Requests.CollectionRequest(this, Endpoints.SELF_TRACKS_URL, reset).execute()).toMutableList()
         res += parsePlaylists(Requests.CollectionRequest(this, Endpoints.SELF_PLAYLISTS_URL, reset).execute())
         return res
@@ -132,19 +127,19 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
      * Returns the logged in user's liked playlists
      */
     @Throws(IOException::class, NotAuthenticatedException::class, JSONException::class)
-    fun getPlaylists(reset: Boolean): List<MediaMetadataCompat> {
+    fun getPlaylists(reset: Boolean): List<MediaItem> {
         return parsePlaylists(Requests.CollectionRequest(this, Endpoints.SELF_PLAYLIST_LIKES_URL, reset).execute())
     }
 
     /**
      * Returns playlist identified by the given id
      */
-    fun getPlaylist(id: String, reset: Boolean): List<MediaMetadataCompat> {
+    fun getPlaylist(id: String, reset: Boolean): List<MediaItem> {
         return parseTracksFromJSONArray(Requests.CollectionRequest(this, Endpoints.PLAYLIST_URL, reset, id).execute())
     }
 
-    private fun parsePlaylists(playlists: JSONArray): List<MediaMetadataCompat> {
-        val result = mutableListOf<MediaMetadataCompat>()
+    private fun parsePlaylists(playlists: JSONArray): List<MediaItem> {
+        val result = mutableListOf<MediaItem>()
         for (i in 0 until playlists.length()) {
             val playlist = playlists.getJSONObject(i)
             val artwork: String = if (!playlist.isNull(Constants.ARTWORK_URL)) {
@@ -153,14 +148,13 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
                 playlist.getJSONObject(Constants.USER).getString(Constants.AVATAR_URL)
             }
 
-            result.add(MediaMetadataCompat.Builder()
-                    .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, playlist.getString(Constants.ID))
-                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, playlist.getString(Constants.TITLE))
-                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, playlist.getJSONObject(Constants.USER).getString(Constants.USERNAME))
-                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, playlist.getLong(Constants.DURATION))
-                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, artwork.replace("large", "t500x500"))
-                    .putString(MediaMetadataCompatExt.METADATA_KEY_TYPE, MediaMetadataCompatExt.MediaType.STREAM.name)
-                .build())
+            result.add(MediaItemUtils.createBrowsableItem(
+                playlist.getString(Constants.ID),
+                playlist.getString(Constants.TITLE),
+                MediaMetadataCompatExt.MediaType.STREAM,
+                playlist.getJSONObject(Constants.USER).getString(Constants.USERNAME),
+                artworkUri = Uri.parse(artwork.replace("large", "t500x500"))
+            ))
         }
         return result
     }
@@ -169,7 +163,7 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
      * Returns the users the logged in user is following
      */
     @Throws(IOException::class, NotAuthenticatedException::class, JSONException::class)
-    fun getFollowings(reset: Boolean): List<MediaMetadataCompat> {
+    fun getFollowings(reset: Boolean): List<MediaItem> {
         return parseTracksFromJSONArray(Requests.CollectionRequest(this, Endpoints.FOLLOWINGS_USER_URL, reset).execute())
     }
 
@@ -177,12 +171,12 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
      * Returns the users that are following the logged in user
      */
     @Throws(IOException::class, NotAuthenticatedException::class, JSONException::class)
-    fun getFollowers(reset: Boolean): List<MediaMetadataCompat> {
+    fun getFollowers(reset: Boolean): List<MediaItem> {
         return parseTracksFromJSONArray(Requests.CollectionRequest(this, Endpoints.FOLLOWERS_USER_URL, reset).execute())
     }
 
-    private fun parseTracksFromJSONArray(tracks: JSONArray): List<MediaMetadataCompat> {
-        val result = mutableListOf<MediaMetadataCompat>()
+    private fun parseTracksFromJSONArray(tracks: JSONArray): List<MediaItem> {
+        val result = mutableListOf<MediaItem>()
         for (j in 0 until tracks.length()) {
             try {
                 var track = tracks.getJSONObject(j)
@@ -207,7 +201,7 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
     }
 
     @Throws(JSONException::class, NotStreamableException::class)
-    internal fun buildTrackFromJSON(json: JSONObject): MediaMetadataCompat {
+    internal fun buildTrackFromJSON(json: JSONObject): MediaItem {
         if (!json.getBoolean(Constants.STREAMABLE))
             throw NotStreamableException("Item can not be streamed!")
 
@@ -217,45 +211,41 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
             json.getJSONObject(Constants.USER).getString(Constants.AVATAR_URL)
         }
 
-        val result = MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, json.getLong(Constants.ID).toString())
-                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, json.getString(Constants.STREAM_URL))
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, json.getJSONObject(Constants.USER).getString(Constants.USERNAME))
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, json.getString(Constants.DESCRIPTION))
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, json.getLong(Constants.DURATION))
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, artwork.replace("large", "t500x500"))
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, json.getString(Constants.TITLE))
-                .putString(MediaMetadataCompatExt.METADATA_KEY_URL, json.getString(Constants.PERMALINK_URL))
-                .putString(MediaMetadataCompatExt.METADATA_KEY_WAVEFORM_URL, json.getString(Constants.WAVEFORM_URL).replace("w1", "wis").replace("png", "json"))
-                .putString(MediaMetadataCompatExt.METADATA_KEY_TYPE, MediaMetadataCompatExt.MediaType.MEDIA.name)
-
-        // The favorite status requires the user to be logged in. Not adding the metadata will
-        // effectively disable the favorite functionality and hiding it in the UI.
-        if (accessToken != null) {
-            if (!json.isNull(Constants.USER_FAVORITE) && json.getBoolean(Constants.USER_FAVORITE)) {
-                result.putRating(MediaMetadataCompatExt.METADATA_KEY_FAVORITE, RatingCompat.newHeartRating(true))
-                likesTrackIds.add(json.getLong(Constants.ID))
-            } else {
-                result.putRating(MediaMetadataCompatExt.METADATA_KEY_FAVORITE, RatingCompat.newHeartRating(false))
-            }
-        }
-
-        if (preferDownloadStream && !json.isNull(Constants.DOWNLOADABLE) && json.getBoolean(Constants.DOWNLOADABLE) && json.has(Constants.DOWNLOAD_URL))
-            result.putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, json.getString(Constants.DOWNLOAD_URL))
-
-        return result.build()
+        val result = MediaItemUtils.createMediaItem(
+            json.getLong(Constants.ID).toString(),
+            Uri.parse(json.getString(Constants.STREAM_URL)),
+            json.getString(Constants.TITLE),
+            json.getLong(Constants.DURATION),
+            json.getJSONObject(Constants.USER).getString(Constants.USERNAME),
+            null,
+            Uri.parse(artwork.replace("large", "t500x500")),
+            json.getString(Constants.WAVEFORM_URL).replace("w1", "wis").replace("png", "json"),
+            json.getString(Constants.PERMALINK_URL),
+            if (accessToken != null) {
+                if (!json.isNull(Constants.USER_FAVORITE) && json.getBoolean(Constants.USER_FAVORITE)) {
+                    HeartRating(true).also {
+                        likesTrackIds.add(json.getLong(Constants.ID))
+                    }
+                } else {
+                    HeartRating(false)
+                }
+            } else null
+        )
+        return result
     }
 
     @Throws(JSONException::class)
-    private fun buildUserFromJSON(json: JSONObject): MediaMetadataCompat {
-        return MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, json.getLong(Constants.ID).toString())
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, json.getString(Constants.USERNAME))
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, json.getString(Constants.FULL_NAME))
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, json.getString(Constants.AVATAR_URL).replace("large", "t500x500"))
-                .putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, json.getString(Constants.DESCRIPTION))
-                .putString(MediaMetadataCompatExt.METADATA_KEY_TYPE, MediaMetadataCompatExt.MediaType.STREAM.name)
-            .build()
+    private fun buildUserFromJSON(json: JSONObject): MediaItem {
+        return MediaItemUtils.createBrowsableItem(
+            json.getLong(Constants.ID).toString(),
+            json.getString(Constants.USERNAME),
+            MediaMetadataCompatExt.MediaType.STREAM,
+            json.getString(Constants.FULL_NAME),
+            null,
+            Uri.parse(json.getString(Constants.AVATAR_URL).replace("large", "t500x500")),
+            null,
+            json.getString(Constants.DESCRIPTION)
+        )
     }
 
     @Throws(IOException::class, NotAuthenticatedException::class)
@@ -271,7 +261,6 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
      * 200 - Success
      *
      * @param trackId
-     * @param accessToken
      * @return
      * @throws IOException
      */
@@ -290,8 +279,7 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
      * 404 - Not found - Track was not liked
      *
      * @param trackId
-     * @param accessToken
-     * @return
+     * @return true if success, false otherwise
      * @throws IOException
      */
     @Throws(IOException::class, NotAuthenticatedException::class)
@@ -303,8 +291,8 @@ class SoundCloudApi(val CLIENT_ID: String, val CLIENT_SECRET: String, val REDIRE
         return success
     }
 
-    fun getStreamUrl(url: String): String {
-        val res = Requests.ActionRequest(this, Requests.Endpoint(Uri.parse(url).path!!, Requests.Method.GET)).execute()
+    fun getStreamUrl(uri: Uri): String {
+        val res = Requests.ActionRequest(this, Requests.Endpoint(uri.path!!, Requests.Method.GET)).execute()
         if (res.status == 302) {
             return JSONObject(res.value).getString("location")
         }

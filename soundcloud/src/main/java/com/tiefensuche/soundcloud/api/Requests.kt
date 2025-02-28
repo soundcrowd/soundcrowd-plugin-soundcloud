@@ -7,7 +7,7 @@ package com.tiefensuche.soundcloud.api
 import com.tiefensuche.soundcloud.api.Constants.COLLECTION
 import com.tiefensuche.soundcloud.api.Constants.JSON_NULL
 import com.tiefensuche.soundcloud.api.Constants.NEXT_HREF
-import com.tiefensuche.soundcrowd.extensions.WebRequests
+import com.tiefensuche.soundcrowd.plugins.WebRequests
 import org.json.JSONArray
 import org.json.JSONObject
 
