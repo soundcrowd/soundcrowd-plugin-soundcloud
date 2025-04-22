@@ -31,17 +31,11 @@ android {
 }
 
 dependencies {
-    implementation 'com.tiefensuche.soundcrowd:plugin:1.0.0'
+    implementation 'com.github.soundcrowd:soundcrowd-plugin:v1.0.0'
 }
 
 repositories {
     mavenCentral()
     google()
-    maven {
-        url = uri("https://maven.pkg.github.com/soundcrowd/soundcrowd-plugin")
-        credentials {
-            username = System.getenv("GITHUB_ACTOR")
-            password = System.getenv("GITHUB_TOKEN")
-        }
-    }
+    maven { url 'https://jitpack.io' }
 }
