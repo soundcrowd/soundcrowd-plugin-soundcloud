@@ -6,9 +6,9 @@ plugins {
 android {
     defaultConfig {
         namespace 'com.tiefensuche.soundcrowd.plugins.soundcloud'
-        compileSdk 35
+        compileSdk 36
         minSdk 21
-        targetSdk 35
+        targetSdk 36
 
         resValue "string", "client_id", "YOUR-CLIENT-ID"
         resValue "string", "client_secret", "YOUR-CLIENT-SECRET"
