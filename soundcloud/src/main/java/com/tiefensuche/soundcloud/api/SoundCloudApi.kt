@@ -26,6 +26,7 @@ import org.json.JSONObject
 import java.io.IOException
 import java.net.URLEncoder
 import kotlin.collections.HashMap
+import androidx.core.net.toUri
 
 /**
  *
@@ -210,10 +211,9 @@ class SoundCloudApi(private val CLIENT_ID: String, private val CLIENT_SECRET: St
         } else {
             json.getJSONObject(Constants.USER).getString(Constants.AVATAR_URL)
         }
-
         val result = MediaItemUtils.createMediaItem(
             json.getLong(Constants.ID).toString(),
-            Uri.parse(json.getString(Constants.STREAM_URL)),
+            json.getString(Constants.URI).toUri(),
             json.getString(Constants.TITLE),
             json.getLong(Constants.DURATION),
             json.getJSONObject(Constants.USER).getString(Constants.USERNAME),
@@ -292,10 +292,18 @@ class SoundCloudApi(private val CLIENT_ID: String, private val CLIENT_SECRET: St
     }
 
     fun getStreamUrl(uri: Uri): String {
-        val res = Requests.ActionRequest(this, Requests.Endpoint(uri.path!!, Requests.Method.GET)).execute()
-        if (res.status == 302) {
-            return JSONObject(res.value).getString("location")
-        }
+        val trackStreams = JSONObject(Requests.ActionRequest(this, Endpoints.TRACK_STREAMS, "soundcloud:tracks:$uri").execute().value)
+        if (trackStreams.has(Constants.HLS_AAC_160_URL))
+            return trackStreams.getString(Constants.HLS_AAC_160_URL)
+        if (trackStreams.has(Constants.HLS_MP3_128_URL))
+            return trackStreams.getString(Constants.HLS_MP3_128_URL)
+        // FIXME app currently only expects hls stream
+//        if (trackStreams.has("http_mp3_128_url")) {
+//            val res = Requests.ActionRequest(this, Requests.Endpoint(trackStreams.getString("http_mp3_128_url").replace("https://api.soundcloud.com", ""), Requests.Method.GET)).execute()
+//            if (res.status == 302) {
+//                return JSONObject(res.value).getString("location")
+//            }
+//        }
         throw NotStreamableException("Can not get stream url")
     }
 

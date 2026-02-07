@@ -21,6 +21,7 @@ internal object Constants {
     const val ERROR = "error_code"
     const val JSON_NULL = "null"
     const val ID = "id"
+    const val URI = "uri"
     const val USER_ID = "user_id"
     const val TITLE = "title"
     const val USER = "user"
@@ -45,4 +46,6 @@ internal object Constants {
     const val PERMALINK_URL = "permalink_url"
     const val PURCHASE_URL = "purchase_url"
     const val STREAMABLE = "streamable"
+    const val HLS_AAC_160_URL = "hls_aac_160_url"
+    const val HLS_MP3_128_URL = "hls_mp3_128_url"
 }
