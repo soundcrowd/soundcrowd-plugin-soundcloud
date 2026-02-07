@@ -291,8 +291,8 @@ class SoundCloudApi(private val CLIENT_ID: String, private val CLIENT_SECRET: St
         return success
     }
 
-    fun getStreamUrl(uri: Uri): String {
-        val trackStreams = JSONObject(Requests.ActionRequest(this, Endpoints.TRACK_STREAMS, "soundcloud:tracks:$uri").execute().value)
+    fun getStreamUrl(id: String): String {
+        val trackStreams = JSONObject(Requests.ActionRequest(this, Endpoints.TRACK_STREAMS, "soundcloud:tracks:$id").execute().value)
         if (trackStreams.has(Constants.HLS_AAC_160_URL))
             return trackStreams.getString(Constants.HLS_AAC_160_URL)
         if (trackStreams.has(Constants.HLS_MP3_128_URL))

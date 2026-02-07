@@ -108,7 +108,7 @@ class Plugin(val context: Context) : IPlugin {
     }
 
     override fun getMediaUri(mediaItem: MediaItem) : Uri {
-        return "${soundCloudApi.getStreamUrl(mediaItem.mediaId.toUri())},${soundCloudApi.accessToken}".toUri()
+        return "${soundCloudApi.getStreamUrl(mediaItem.mediaId)},${soundCloudApi.accessToken}".toUri()
     }
 
     override fun favorite(id: String) : Boolean {
