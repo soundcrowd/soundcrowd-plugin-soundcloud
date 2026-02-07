@@ -25,6 +25,7 @@ object Endpoints {
     val SELF_PLAYLISTS_URL = Requests.CollectionEndpoint("/me/playlists")
     val FOLLOWINGS_USER_URL = Requests.CollectionEndpoint("/me/followings")
     val FOLLOWERS_USER_URL = Requests.CollectionEndpoint("/me/followers")
+    val TRACK_STREAMS = Requests.Endpoint("/tracks/%s/streams", Requests.Method.GET)
 
     // authenticated actions
     val LIKE_TRACK_URL = Requests.Endpoint("/likes/tracks/%s", Requests.Method.POST)

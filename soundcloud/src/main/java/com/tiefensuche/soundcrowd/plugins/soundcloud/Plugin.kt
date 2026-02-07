@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.AsyncTask
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.preference.Preference
 import androidx.preference.PreferenceManager
@@ -107,7 +108,7 @@ class Plugin(val context: Context) : IPlugin {
     }
 
     override fun getMediaUri(mediaItem: MediaItem) : Uri {
-        return Uri.parse(soundCloudApi.getStreamUrl(mediaItem.requestMetadata.mediaUri!!))
+        return "${soundCloudApi.getStreamUrl(mediaItem.mediaId)},${soundCloudApi.accessToken}".toUri()
     }
 
     override fun favorite(id: String) : Boolean {
