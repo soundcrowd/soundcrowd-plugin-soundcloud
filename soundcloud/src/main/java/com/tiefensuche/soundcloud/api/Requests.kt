@@ -80,12 +80,8 @@ class Requests {
             try {
                 return WebRequests.request(url, endpoint.method.value, mapOf("Authorization" to "OAuth ${session.accessToken}"))
             } catch (e: WebRequests.HttpException) {
-                if (e.code == 401) {
-                    session.accessToken = null
-                    session.refreshToken?.let {
-                        session.getAccessToken(it, true)
-                        return WebRequests.request(url, endpoint.method.value, mapOf("Authorization" to "OAuth ${session.accessToken}"))
-                    }
+                if (e.code == 401 && session.refreshToken()) {
+                    return WebRequests.request(url, endpoint.method.value, mapOf("Authorization" to "OAuth ${session.accessToken}"))
                 }
                 throw e
             }
