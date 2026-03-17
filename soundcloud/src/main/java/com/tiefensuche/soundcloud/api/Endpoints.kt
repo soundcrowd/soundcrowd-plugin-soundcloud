@@ -7,6 +7,7 @@ package com.tiefensuche.soundcloud.api
 object Endpoints {
     // base url
     const val SC_API_URL = "https://api.soundcloud.com"
+    const val SC_AUTH_URL = "https://secure.soundcloud.com"
 
     // unauthenticated request methods
     val USER_TRACKS_URL = Requests.CollectionEndpoint("/users/%s/tracks")
@@ -15,7 +16,8 @@ object Endpoints {
     val QUERY_USER_URL = Requests.CollectionEndpoint("/users?q=%s")
 
     // authentication
-    const val OAUTH2_TOKEN_URL = "$SC_API_URL/oauth2/token"
+    const val OAUTH2_AUTHORIZE_URL = "$SC_AUTH_URL/authorize"
+    const val OAUTH2_TOKEN_URL = "$SC_AUTH_URL/oauth/token"
 
     // authenticated request methods
     val STREAM_URL = Requests.CollectionEndpoint("/me/activities/tracks")

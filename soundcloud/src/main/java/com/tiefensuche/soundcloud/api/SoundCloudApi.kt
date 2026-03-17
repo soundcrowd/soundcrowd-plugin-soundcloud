@@ -7,6 +7,7 @@ package com.tiefensuche.soundcloud.api
 import android.content.SharedPreferences
 import android.net.Uri
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.media3.common.HeartRating
 import androidx.media3.common.MediaItem
 import com.tiefensuche.soundcloud.api.Constants.ACCESS_TOKEN
@@ -14,9 +15,9 @@ import com.tiefensuche.soundcloud.api.Constants.ERROR
 import com.tiefensuche.soundcloud.api.Constants.KIND
 import com.tiefensuche.soundcloud.api.Constants.LIKE
 import com.tiefensuche.soundcloud.api.Constants.ORIGIN
+import com.tiefensuche.soundcloud.api.Constants.REFRESH_TOKEN
 import com.tiefensuche.soundcloud.api.Constants.TRACK
 import com.tiefensuche.soundcloud.api.Constants.USER
-import com.tiefensuche.soundcloud.api.Constants.REFRESH_TOKEN
 import com.tiefensuche.soundcrowd.plugins.MediaItemUtils
 import com.tiefensuche.soundcrowd.plugins.MediaMetadataCompatExt
 import com.tiefensuche.soundcrowd.plugins.WebRequests
@@ -25,8 +26,10 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 import java.net.URLEncoder
-import kotlin.collections.HashMap
-import androidx.core.net.toUri
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+import java.security.SecureRandom
+import kotlin.io.encoding.Base64
 
 /**
  *
@@ -43,15 +46,76 @@ class SoundCloudApi(private val CLIENT_ID: String, private val CLIENT_SECRET: St
     val nextQueryUrls: HashMap<String, String> = HashMap()
     private var likesTrackIds: MutableSet<Long> = HashSet()
 
-    /**
-     * Request new access token for the user identified by the username and password
-     */
+    class OAuth(private val CLIENT_ID: String, private val REDIRECT_URI: String) {
+        val random = SecureRandom()
+        var codeVerifier: String
+        var state: String
+        var code: String? = null
+
+        init {
+            codeVerifier = generateRandomString(128)
+            state = generateRandomString(128)
+        }
+
+        private fun generateRandomString(length: Int): String {
+            val characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+            val sb = StringBuilder()
+            for (i in 0..<length) {
+                sb.append(characters[random.nextInt(characters.length)])
+            }
+            return sb.toString()
+        }
+
+        private fun generateCodeChallenge(codeVerifier: String): String {
+            val digest = MessageDigest.getInstance("SHA-256")
+            val hashed = digest.digest(codeVerifier.toByteArray(StandardCharsets.UTF_8))
+            return Base64.encode(hashed)
+                .replace("=", "")
+                .replace("+", "-")
+                .replace("/", "_")
+        }
+
+        fun getAuthUrl(): String {
+            return Endpoints.OAUTH2_AUTHORIZE_URL +
+                    "?client_id=${CLIENT_ID}" +
+                    "&redirect_uri=${REDIRECT_URI}" +
+                    "&response_type=code&code_challenge=${generateCodeChallenge(codeVerifier)}" +
+                    "&code_challenge_method=S256" +
+                    "&state=$state"
+        }
+
+        fun processCallback(callback: String) {
+            val uri = callback.toUri()
+            val code = uri.getQueryParameter("code") ?: throw Exception("code parameter missing")
+            val state = uri.getQueryParameter("state") ?: throw Exception("state parameter missing")
+            if (this.state != state)
+                throw Exception("Invalid state!")
+            this.code = code
+        }
+    }
+
+    fun newAuth(): OAuth {
+        return OAuth(CLIENT_ID, REDIRECT_URI)
+    }
+
+    fun getAccessToken(auth: OAuth) {
+        if (auth.code == null) {
+            throw Exception("code from callback missing")
+        }
+        getAccessToken("&grant_type=authorization_code&redirect_uri=$REDIRECT_URI&code_verifier=${auth.codeVerifier}&code=${auth.code}")
+    }
+
+    fun refreshToken(): Boolean {
+        accessToken = null
+        return refreshToken?.let {
+            getAccessToken("&grant_type=refresh_token&refresh_token=$it")
+            true
+        } ?: false
+    }
+
     @Throws(JSONException::class, IOException::class, UserNotFoundException::class, InvalidCredentialsException::class)
-    fun getAccessToken(code: String, refresh: Boolean) {
-        val data = "grant_type=" + (if (refresh) "refresh_token" else "authorization_code") +
-                "&client_id=$CLIENT_ID" +
-                "&client_secret=$CLIENT_SECRET" +
-                (if (refresh) "&refresh_token=$code" else "&redirect_uri=$REDIRECT_URI&code=$code")
+    private fun getAccessToken(params: String) {
+        val data = "client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET$params"
         try {
             val response = JSONObject(WebRequests.post(Endpoints.OAUTH2_TOKEN_URL, data).value)
             if (!response.has(ACCESS_TOKEN)) {

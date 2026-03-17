@@ -42,6 +42,7 @@ class Plugin(val context: Context) : IPlugin {
     private var soundCloudApi: SoundCloudApi = SoundCloudApi(context.getString(R.string.client_id),
         context.getString(R.string.client_secret), context.getString(R.string.redirect_uri), sharedPref)
     private val connectPreference = SwitchPreference(context)
+    private var auth: SoundCloudApi.OAuth? = null
 
     init {
         connectPreference.key = context.getString(R.string.soundcloud_connect_key)
@@ -50,10 +51,8 @@ class Plugin(val context: Context) : IPlugin {
         connectPreference.isChecked = sharedPref.getString(ACCESS_TOKEN, null) != null
         connectPreference.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newValue ->
             if (newValue == true) {
-                val intent = Intent(
-                    Intent.ACTION_VIEW, Uri.parse("${Endpoints.SC_API_URL}/connect?client_id=${context.getString(
-                        R.string.client_id)}&redirect_uri=${context.getString(
-                        R.string.redirect_uri)}&response_type=code"))
+                val auth = soundCloudApi.newAuth().also { auth = it }
+                val intent = Intent(Intent.ACTION_VIEW, auth.getAuthUrl().toUri())
                 intent.flags = FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(intent)
                 false
@@ -117,12 +116,15 @@ class Plugin(val context: Context) : IPlugin {
 
     override fun getIcon(): Bitmap = icon
 
-    private class RequestAccessTokenTask(private val plugin : Plugin) : AsyncTask<String, Void, Boolean>() {
+    private class RequestAccessTokenTask(private val plugin: Plugin) : AsyncTask<String, Void, Boolean>() {
         override fun doInBackground(vararg p0: String): Boolean {
             return try {
-                plugin.soundCloudApi.getAccessToken(p0[0], false)
+                val auth = plugin.auth ?: throw Exception("authorization flow not started")
+                auth.processCallback("callback?${p0[0]}")
+                plugin.soundCloudApi.getAccessToken(auth)
                 true
             } catch (e: Exception) {
+                println(e.message)
                 false
             }
         }
@@ -133,7 +135,7 @@ class Plugin(val context: Context) : IPlugin {
     }
 
     private fun callback(callback: String) {
-        RequestAccessTokenTask(this).execute(callback.substringAfterLast('='))
+        RequestAccessTokenTask(this).execute(callback)
     }
 
     override fun callbacks() = mapOf("soundcloud" to ::callback)
