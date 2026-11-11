@@ -214,7 +214,7 @@ class SoundCloudApi(private val CLIENT_ID: String, private val CLIENT_SECRET: St
             }
 
             result.add(MediaItemUtils.createBrowsableItem(
-                playlist.getString(Constants.ID),
+                playlist.get(Constants.ID).toString(),
                 playlist.getString(Constants.TITLE),
                 MediaMetadataCompatExt.MediaType.STREAM,
                 playlist.getJSONObject(Constants.USER).getString(Constants.USERNAME),
